@@ -1,26 +1,21 @@
 import functools
-import inspect
 import sys
+import contextlib
 
 __all__ = ['async_contextmanager']
 
 
-class _AsyncContextManager(object):
-    def __init__(self, func, args, kwargs):
-        if not inspect.isasyncgenfunction(func):
-            raise TypeError('%s is not async generator function' % func)
-        self.async_generator = func(*args, **kwargs)
-
+class _AsyncContextManager(contextlib._GeneratorContextManager):
     async def __aenter__(self):
         try:
-            return await self.async_generator.__anext__()
+            return await self.gen.__anext__()
         except StopAsyncIteration as e:
             raise RuntimeError("async generator didn't yield") from None
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
             try:
-                await self.async_generator.__anext__()
+                await self.gen.__anext__()
             except StopAsyncIteration:
                 return
             else:
@@ -29,7 +24,7 @@ class _AsyncContextManager(object):
             if exc_val is None:
                 exc_val = exc_type()
             try:
-                await self.async_generator.athrow(exc_type, exc_val, exc_tb)
+                await self.gen.athrow(exc_type, exc_val, exc_tb)
                 raise RuntimeError("async generator didn't stop after throw()")
             except StopAsyncIteration as exc:
                 return exc is not exc_val

@@ -101,18 +101,6 @@ async def test_async_gen_no_yield():
 
 
 @pytest.mark.asyncio
-async def test_not_async_gen_function():
-    @async_contextmanager
-    async def test():
-        pass
-
-    with pytest.raises(TypeError) as e:
-        async with test():
-            raise AssertionError('This code must not be run')
-    assert 'is not async generator function' in str(e.value)
-
-
-@pytest.mark.asyncio
 async def test_several_yields():
     @async_contextmanager
     async def test():
